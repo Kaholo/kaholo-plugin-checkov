@@ -36,8 +36,8 @@ async function asyncExec(params) {
       throw resultObj;
     }
     const errorObj = {
-      "Exit Code": error,
-      "Error Message": errorChunks?.join() || "See Activity Log",
+      "exit_code": error,
+      "error_message": errorChunks?.join() || "See Activity Log",
     };
     throw errorObj;
   }
