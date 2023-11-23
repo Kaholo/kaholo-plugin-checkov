@@ -80,7 +80,7 @@
         },
         {
           "name": "jsonOutput",
-          "viewName": "Use JSON output",
+          "viewName": "Use JSON Output",
           "description": "Return Final Result in JSON format (-o json).",
           "type": "boolean",
           "default": true
