@@ -6,7 +6,7 @@
   "execProgram": "node",
   "imgUrl": "logo.png",
   "version": "1.0.0",
-  "description": "Checkov scans cloud infrastructure configurations for misconfigurations",
+  "description": "Checkov scans cloud infrastructure configurations for issues",
   "category": [
     "Infrastructure Management"
   ],
@@ -80,7 +80,7 @@
         },
         {
           "name": "jsonOutput",
-          "viewName": "Use JSON output",
+          "viewName": "Use JSON Output",
           "description": "Return Final Result in JSON format (-o json).",
           "type": "boolean",
           "default": true
