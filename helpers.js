@@ -16,6 +16,7 @@ async function asyncExec(params) {
   }
 
   const dataChunks = [];
+  const errorChunks = [];
 
   childProcessInstance.stdout.on("data", (data) => {
     onProgressFn?.(data);
@@ -23,6 +24,8 @@ async function asyncExec(params) {
   });
   childProcessInstance.stderr.on("data", (data) => {
     onProgressFn?.(data);
+    const messagePrefix = "checkov: error: ";
+    errorChunks.push(data.split(messagePrefix)[1]);
   });
 
   try {
@@ -30,10 +33,13 @@ async function asyncExec(params) {
   } catch (error) {
     const resultObj = tryParseJson(dataChunks.join());
     if (error === 1 && resultObj) {
-      // stringify needed only to partially workaround Error: [object Object] bug in 4.2.0
-      throw JSON.stringify(resultObj);
+      throw resultObj;
     }
-    throw error;
+    const errorObj = {
+      "Exit Code": error,
+      "Error Message": errorChunks?.join() || "See Activity Log",
+    };
+    throw errorObj;
   }
 
   const resultObj = tryParseJson(dataChunks.join());

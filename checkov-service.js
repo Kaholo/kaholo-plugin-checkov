@@ -50,8 +50,8 @@ async function runCheckovScan(params) {
     image: dockerImage,
   };
 
-  console.error(`The Checkov command is: checkov ${dockerCommandBuildOptions.command}`);
-  console.error(`Running in docker container using image ${dockerCommandBuildOptions.image}`);
+  console.info(`The Checkov command is: checkov ${dockerCommandBuildOptions.command}\n`);
+  console.info(`Running in docker container using image ${dockerCommandBuildOptions.image}\n`);
 
   const workingDirVolumeDefinition = docker.createVolumeDefinition(workingDirectory.absolutePath);
 
@@ -74,8 +74,6 @@ async function runCheckovScan(params) {
       env: dockerEnvVars,
     },
     onProgressFn: process.stdout.write.bind(process.stdout),
-  }).catch((error) => {
-    throw new Error(error.stderr || error.stdout || error.message || error);
   });
 }
 
