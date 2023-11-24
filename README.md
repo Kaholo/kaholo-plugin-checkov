@@ -1,85 +1,53 @@
-# Kaholo SystemXYZ Plugin
-This plugin integrates ACME, inc. SystemXYZ with Kaholo, providing access to SystemXYZ's alerting functionality, for example sending a Ex message or setting an Zed alarm to notify someone of the results of a Kaholo Pipeline Action. For triggering Kaholo Pipelines from SystemXYZ, please see the Kaholo [SystemXYZ trigger](https://github.com/Kaholo/kaholo-trigger-systemxyz) instead.
+# Kaholo Checkov Plugin
+Checkov scans cloud infrastructure configurations to find misconfigurations before they're deployed.
 
-## Prerequisites
-This plugin works with SystemXYZ version 4.0 and later, both SaaS platform and locally hosted versions.
+Checkov uses a common command line interface to manage and analyze infrastructure as code (IaC) scan results across platforms such as Terraform, CloudFormation, Kubernetes, Helm, ARM Templates and Serverless framework.
 
-The following SystemXYZ APIs must be enabled for 3rd party access in the SystemXYZ Platform. The Kaholo plugin's service ID string is "kaholo-plugin-da2de162". SystemXYZ does not support 3rd party access to the Wy API so there are no Wy controller methods in the plugin.
+## Checkov Text vs JSON
+The Checkov CLI allows JSON output using the `-o json` argument. JSON output allows for ready code-layer access to the results in Kaholo so a parameter is provided get JSON output by default. The resulting JSON report can be found in the Kaholo Execution Final Result. To access this programmatically, use `kaholo.actions.checkov1.result` where `checkov1` is the ID of the upstream Checkov Action in the Kaholo pipeline. For example the number of failures is available as `kaholo.actions.checkov1.result.summary.failed`.
 
->**SystemXYZ Ex API**
->
->**SystemXYZ Zed API**
+## Checkov Exit Code
+A successful Checkov scan with no failing checks results in exit code 0 and a Kaholo Action status of `success`. If any checks fail then the exit code is 1 and the Kaholo Action status is `error`. To allow Checkov checks to fail and the Kaholo Action to still succeed, use Additional Command Argument `--soft-fail`. With or without this argument the Checkov report is returned to the Kaholo Execution Final Result if JSON output is used.
 
-The SystemXYZ connectivity package must be installed on Kaholo agents. A `Test API` method is provided in the plugin. Check Parameter "Install API" in order to automatically install the SystemXYZ connectivity package. Alternatively, ask your Kaholo administrator to follow the [installation instructions](https://www.systemxyz.com.nz/install_connectivity_package/v4) on the SystemXYZ webite.
+For other errors, e.g. exit code 2, the plugin attempts to parse out the relevant error message and returns it in Final Result as `error_message` in Final Result.
 
-## Access and Authentication
-The plugin accesses SystemXYZ using the same URL as the web console, e.g. https://your-account.systemxyz.com.nz/. However, authentication with user/password is not permitted for automated processes.
+In all cases the full output of Checkov is made available in plain text in the Kaholo Execution Activity Log.
 
-Instead the plugin uses SystemXYZ service tokens to authenticate. A SystemXYZ service token is a string that begins `XYZ-`, for example `XYZ-9ef6df656f9db28d4feaac0c0c6855bc`.  To get an appropriate service token, ask your SystemXYZ administrator for one that has permissions for the following actions:
-* ex-send
-* ex-send-email (only if email feature is used)
-* zed-readgroups
-* zed-triggergroups
-* xyz-vieworg
-* xyz-viewalarms
+## Method: Run Checkov Scan
+This method runs a checkov scan using the CLI command `checkov`, which is run in a docker container using the specified docker image. Many of the arguments normally provided the command are parameterized in the Action for ease of use. The full text output (whether or not JSON output is specified) is displayed in the Kaholo Activity Log.
 
-You will also what to specify which Zed groups you will access, or alternately if the service token is granted `zed-any`, the plugin will be able to read and trigger all SystemXYZ groups.
+The full command used to make the scan is displayed in the Kaholo Activity Log prior to execution, as well as the docker image that was used. For example:
 
-You may have more than one service token, these are vaulted in the Kaholo Vault. The service token is needed for Parameter "XYZ Service Token" as described below.
+    The Checkov command is: checkov -f gcp-create-instance/main.tf --skip-check CKV_SECRET_2,CKV_SECRET_6 --soft-fail
 
-## Plugin Installation
-For download, installation, upgrade, downgrade and troubleshooting of plugins in general, see [INSTALL.md](./INSTALL.md).
+    Running in docker container using image bridgecrew/checkov:3.1.2
 
-## Plugin Settings
-Plugin settings act as default parameter values. If configured in plugin settings, the action parameters may be left unconfigured. Action parameters configured anyway over-ride the plugin-level settings for that Action.
-* Default XYZ Endpoint - The URL of your SystemXYZ installation, e.g. `https://your-account.systemxyz.com.nz/`
-* Default Zed Alarm Group - The Zed Alarm Group to use with Zed alarm methods, e.g. `zed-group-one`. Not used for Ex message-related methods.
-* Default Service Token (Vault) - The service token, stored in the Kaholo vault for authentication and access. e.g. `XYZ-9ef6df656f9db28d4feaac0c0c6855bc`
+### Parameter: Working Directory
+The Working Directory is a directory on the Kaholo Agent where the code to be scanned can be found. It is typically cloned to the Kaholo Agent by an upstream Git action. Because the plugin runs Checkov in a container with Working Directory mounted into the container it is important that the code to be scanned be within Working Directory.
 
-## Pipelining Alarm Messaging
-A common use case for this plugin is to prototype Wy controller notifications by catching Zed Hooks, applying logic, and sending Ex messages as appropriate. To do this the following steps are needed:
-1. Install and configure the Kaholo [SystemXYZ trigger](https://github.com/Kaholo/kaholo-trigger-systemxyz) to be activated by a [SystemXYZ Zed Hook](https://www.systemxyz.com.nz/zed_hooks/v4).
-1. Use the trigger to start your prototype Kaholo pipeline.
-1. Use method Read Zed Alarms to collect the active alarm list and details.
-1. Apply your logic using the Kaholo Code page and/or Kaholo Conditional Code.
-1. Use method Send Ex Message if your logic determines it appropriate.
+The path provided may be relative or absolute, or even omitted. If relative, it is relative to the default working directory of the Kaholo agent, for example `/twiddlebug/workspace`. If omitted the Working Directory is the default working directory on the Kaholo agent.
 
-## Method: Test API
-This method does a trivial test of the SystemXYZ connectivity package installed on the Kaholo agent, in order to validate that it is installed correctly and can network connect to the XYZ Endpoint. It returns only the version number of the SystemXYZ system and does not require a service token.
+### Parameter: Target File or Directory
+To scan a specific file or directory within working directory specify the file or relative path to the directory here. Omit this parameter to scan the entire working directory. The plugin detects whether a file or directory has been provided and uses the `-f` or `-d` command line argument as appropriate.
 
-### Parameters
-Required parameters have an asterisk (*) next to their names.
-* XYZ Endpoint * - as described above in [plugin settings](#plugin-settings)
-* Install API (checkbox) - if checked and the connectivity package is not found on the agent, the plugin will attempt to automatically install it.
+### Parameter: Checks to Skip
+Often certain checks are anticipated to fail and this is considered harmless, so it may be preferable to skip those checks. To skip no checks, leave this parameter empty. List checks to skip one per line. This is equivalent to the `--skip-check` argument used on the command line.
 
-## Method: Send Ex Message
-This method composes an Ex Message to send to SystemXYZ users and/or groups. Message bodies may be in JSON, MD, HTML, or plain text format. Malformed JSON, MD, or HTML results in a plain text message. Combinations of users and groups are permitted. Users listed who are also group members or member in more than one group get the message only once.
+### Parameter: Environment Variables
+Checkov is affected not only by command line arguments but also Environment Variables. To set environment variables in the container running the command, list them here as `KEY=value` pairs, one per line.
 
-> NOTE: Parameters left unconfigured get "Kaholo" by default, including message body and title. If parameter `Email` is selected, parameter `From` must be a valid user name or it will be rejected by SystemXYZ with `HTTP 404 - Page not found`. This also requires the service token have the special permission `ex-send-email`, otherwise you get the same HTTP 404 error.
+### Parameter: Secret Environment Variables
+Some environment variables may be used that are sensitive secrets, for example access tokens or passwords. These should not be exposed in the user interface, Activity Log, or error logs in Kaholo.
 
-### Parameters
-Required parameters have an asterisk (*) next to their names.
-* XYZ Endpoint * - as described above in [plugin settings](#plugin-settings)
-* Service Token * - as described above in [plugin settings](#plugin-settings)
-* Message Title - plain text one-line title of the message
-* Message Body - the body of the message in JSON, MD, HTML, or plain text format
-* Recipients * - the list of recipients, either usernames or group names, one per line
-* From - indicates the source of the message, either a valid user name or arbitrary text string
-* Email - if checked and SystemXYZ is linked to an email system, the message is sent out as an email instead of a SystemXYZ Ex message.
+Enter secret environment variables into the Kaholo Vault, just like parameter Environment Variables - `KEY=value` pairs, one per line. Then specify the Kaholo Vault item in this parameter to make those variables available to checkov in the container where it runs.
 
-## Method: Read Zed Alarms
-This method reads a Zed Alarm group from SystemXYZ whether or not any of the alarms are active. It is commonly used with the Kaholo [SystemXYZ trigger](https://github.com/Kaholo/kaholo-trigger-systemxyz) and [SystemXYZ Zed Hooks](https://www.systemxyz.com.nz/zed_hooks/v4). The trigger provides the timely response to an alarm, while this method provides the details of the alarm.
+### Parameter: Use JSON Output
+As a convenience, this boolean parameter includes `-o json` in the command line arguments if enabled. This results in a well-formed JSON report being made available in Final Result, if the scan is successful, whether or not all checks pass.
 
-If parameter `Zed Hook Code` is configured, the details on the triggering alarm are provided. If parameter `Alarm Group` is provided the details on all alarms (active or not) are provided. If both are configured, details on both are provided, even if the code refers to an alarm not in that group. This is useful in overcoming cross-group limitations in SystemXYZ alarms.
+### Parameter: Additional Command Arguments
+If the above parameterized arguments do not include one you wish to use, specify additional checkov CLI arguments here, one per line. For example `--soft-fail` to allow the scan to end in success even if some checks fail.
 
-The Final Result in Kaholo is a JSON document of the same format as the equivalent [SystemXYZ Alarm Export](https://www.systemxyz.com.nz/alarm_export/v4).
+### Parameter: Docker Image
+The plugin is designed to run checkov using a docker image found in docker hub. To run checkov with a custom docker image or different version of the bridgecrew docker image, specify which image to use here. The Kaholo Agent will automatically pull the image specified and attempt to run the scan using the image. The entrypoint of the image must be `checkov`.
 
-### Parameters
-Required parameters have an asterisk (*) next to their names.
-* XYZ Endpoint * - as described above in [plugin settings](#plugin-settings)
-* Service Token * - as described above in [plugin settings](#plugin-settings)
-* Zed Hook Code - a code string from Zed Hooks, e.g. `zed-20220329aad`
-* Zed Alarm Group - a Zed alarm group, e.g. `zed-group-one`
-
-## Method: Set Zed Alarm
-This method is not yet implemented. If you are interested in setting Zed alarms from Kaholo, please let us know! support@kaholo.io.
+The plugin was developed using `bridgecrew/checkov:3.1.2`. A new Checkov action put in the pipeline will arrive configured to use this image as the default.

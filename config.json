@@ -1,62 +1,107 @@
 {
-  "name": "kaholo-plugin-template",
-  "viewName": "Kaholo Template Plugin",
+  "name": "checkov",
+  "viewName": "Checkov",
   "type": "executer",
   "main": "app.js",
   "execProgram": "node",
-  "exposeRoute": false,
   "imgUrl": "logo.png",
-  "version": "2.0.0",
-  "description": "This plugin is only a generic template.",
+  "version": "1.0.1",
+  "description": "Checkov scans cloud infrastructure configurations for issues",
   "category": [
-    "Basic Tools"
+    "Infrastructure Management"
   ],
   "keywords": [
-    "template",
-    "plugin",
-    "kaholo",
-    "hello"
+    "checkov",
+    "chekhov",
+    "infrastructure",
+    "terraform",
+    "helm",
+    "cloudformation",
+    "kubernetes",
+    "iac",
+    "static",
+    "code",
+    "testing"
    ],
-  "settings": [
-    {
-      "name": "helloName",
-      "viewName": "Default Hello Name",
-      "type": "string",
-      "description": "The person to whom to say hello by default",
-      "learnUrl": "https://docs.apify.com/api/v2#/introduction/authentication"
-    }
-  ],
   "methods": [
     {
-      "name": "hello",
-      "viewName": "Say hello",
+      "name": "runCheckovScan",
+      "viewName": "Run Checkov Scan",
+      "allowEmptyResult": true,
       "params": [
         {
-          "name": "helloName",
-          "viewName": "Hello Name",
+          "name": "workingDirectory",
+          "viewName": "Working Directory",
+          "description": "A directory on the Kaholo agent containing the IaC code to scan, either absolute or relative path",
           "type": "string",
+          "parserType": "filePath",
+          "parserOptions": {
+            "throwIfDoesntExist": true,
+            "acceptedTypes": [
+              "directory"
+            ]
+          },
           "required": false,
-          "placeholder": "World",
-          "default": "World",
-          "description": "The person to whom to say hello",
-          "learnUrl": "https://en.wikipedia.org/wiki/%22Hello,_World!%22_program"
+          "placeholder": "infra-asiapac/terraform"
         },
         {
-          "name": "secret",
-          "viewName": "Secret",
+          "name": "targetFileOrDirectory",
+          "viewName": "Target File or Directory",
+          "description": "Optional specific file or directory within working directory to scan (-d or -f)",
+          "type": "string",
+          "placeholder": "leave empty to scan whole working directory",
+          "required": false
+        },
+        {
+          "name": "checksToSkip",
+          "viewName": "Checks to Skip",
+          "description": "A list of checks to skip, one per line (--skip-check)",
+          "type": "text",
+          "parserType": "array",
+          "placeholder": "CKV_AWS_41\nCKV_SECRET_*",
+          "learnUrl": "https://www.checkov.io/2.Basics/CLI%20Command%20Reference.html"
+        },
+        {
+          "name": "environmentVariables",
+          "viewName": "Environment Variables",
+          "description": "one-per-line Key=Value pairs, to be set as environment variables in Checkov's environment",
+          "placeholder": "TF_HOST_NAME=gitlab.com\nCHECKOV_EXPERIMENTAL_TERRAFORM_MANAGED_MODULES=true",
+          "type": "text",
+          "parserType": "keyValuePairs",
+          "learnUrl": "https://docs.cypress.io/guides/guides/environment-variables"
+        },
+        {
+          "name": "secretEnvVars",
+          "viewName": "Secret Environment Variables",
           "type": "vault",
-          "required": false,
-          "description": "A secret we might also say.",
-          "learnUrl": "https://en.wikipedia.org/wiki/%22Hello,_World!%22_program"
+          "parserType": "keyValuePairs",
+          "description": "One-per-line Key=Value pairs stored as a Kaholo Vault item, to be set as environment variables in Checkov's environment",
+          "placeholder": "vaulted TF_REGISTRY_TOKEN=<mytoken>"
         },
         {
-          "name": "saySecret",
-          "viewName": "Say secret",
+          "name": "jsonOutput",
+          "viewName": "Use JSON Output",
+          "description": "Return Final Result in JSON format (-o json).",
           "type": "boolean",
-          "required": false,
-          "default": false,
-          "description": "If checked we'll also say the secret.",
-          "learnUrl": "https://en.wikipedia.org/wiki/%22Hello,_World!%22_program"
+          "default": true
+        },
+        {
+          "name": "additionalArguments",
+          "viewName": "Additional Command Arguments",
+          "description": "Add any additional arguments to the command, one per line.",
+          "type": "text",
+          "parserType": "array",
+          "placeholder": "--soft-fail\n--quiet",
+          "learnUrl": "https://www.checkov.io/2.Basics/CLI%20Command%20Reference.html"
+        },
+        {
+          "name": "dockerImage",
+          "viewName": "Docker Image",
+          "type": "string",
+          "description": "Specify which Checkov docker repo/image:tag to use.",
+          "placeholder": "bridgecrew/checkov:3.1.2", 
+          "default": "bridgecrew/checkov:3.1.2",
+          "required": true
         }
       ]
     }
