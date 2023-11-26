@@ -99,8 +99,8 @@
           "viewName": "Docker Image",
           "type": "string",
           "description": "Specify which Checkov docker repo/image:tag to use.",
-          "placeholder": "bridgecrew/checkov:3.1.2", 
-          "default": "bridgecrew/checkov:3.1.2",
+          "placeholder": "bridgecrew/checkov:3.1.13", 
+          "default": "bridgecrew/checkov:3.1.13",
           "required": true
         }
       ]
