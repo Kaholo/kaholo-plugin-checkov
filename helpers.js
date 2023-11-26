@@ -42,7 +42,7 @@ async function asyncExec(params) {
     throw errorObj;
   }
 
-  const resultObj = tryParseJson(dataChunks.join());
+  const resultObj = tryParseJson(dataChunks.join(''));
   if (resultObj) {
     return resultObj;
   }
