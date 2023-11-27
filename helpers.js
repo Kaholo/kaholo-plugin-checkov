@@ -31,18 +31,18 @@ async function asyncExec(params) {
   try {
     await util.promisify(childProcessInstance.on.bind(childProcessInstance))("close");
   } catch (error) {
-    const resultObj = tryParseJson(dataChunks.join());
+    const resultObj = tryParseJson(dataChunks.join(''));
     if (error === 1 && resultObj) {
       throw resultObj;
     }
     const errorObj = {
       exit_code: error,
-      error_message: errorChunks?.join() || "See Activity Log",
+      error_message: errorChunks?.join('') || "See Activity Log",
     };
     throw errorObj;
   }
 
-  const resultObj = tryParseJson(dataChunks.join());
+  const resultObj = tryParseJson(dataChunks.join(''));
   if (resultObj) {
     return resultObj;
   }
